@@ -9,7 +9,7 @@ export function videoId(input){
   }else if(['youtu.be','www.youtu.be'].includes(host))id=url.pathname.slice(1).split('/')[0];
   return /^[A-Za-z0-9_-]{11}$/.test(id||'')?id:null;
 }
-export function audioLink(input,allowedHosts='*.ytjar.xyz,eta.123tokyo.xyz'){
+export function audioLink(input,allowedHosts='*.ytjar.xyz,*.123tokyo.xyz'){
   let url;try{url=new URL(input)}catch{return null}
   const hosts=allowedHosts.split(',').map(host=>host.trim().toLowerCase()).filter(Boolean),hostname=url.hostname.toLowerCase();
   const allowed=hosts.some(pattern=>pattern.startsWith('*.')?(hostname===pattern.slice(2)||hostname.endsWith('.'+pattern.slice(2))):hostname===pattern);
@@ -33,7 +33,7 @@ export default async request=>{
     if(type.includes('json')){
       const data=await response.json();
       if(data.status!=='ok'||!data.link)return json(data.msg||'O serviço ainda não retornou um link de áudio. Tente novamente.',502);
-      const link=audioLink(data.link,process.env.YOUTUBE_CONVERTER_AUDIO_HOSTS||'*.ytjar.xyz,eta.123tokyo.xyz');
+      const link=audioLink(data.link,process.env.YOUTUBE_CONVERTER_AUDIO_HOSTS||'*.ytjar.xyz,*.123tokyo.xyz');
       if(!link){let host='desconhecido';try{host=new URL(data.link).hostname}catch{}return json(`O serviço retornou um host de áudio não autorizado: ${host}.`,502)}
       audioResponse=await fetch(link,{redirect:'manual',signal:AbortSignal.timeout(45000)});
       if(!audioResponse.ok)return json(`O arquivo de áudio não pôde ser baixado (${audioResponse.status}).`,502);
