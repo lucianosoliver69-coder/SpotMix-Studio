@@ -20,19 +20,18 @@ export default async request=>{
   let input;try{input=await request.json()}catch{return json('Envie um JSON válido.',400)}
   const id=videoId(input.url);if(!id)return json('Link do YouTube inválido.',400);
   if(!['mp3','wav'].includes(input.format))return json('Escolha MP3 ou WAV.',400);
-  const endpoint=process.env.YOUTUBE_CONVERTER_API_URL;
-  if(!endpoint)return json('A API de download ainda não foi conectada. Envie os dados do provedor para habilitar esta função.',503);
-  let provider;try{provider=new URL(endpoint);if(provider.protocol!=='https:')throw Error()}catch{return json('Configuração da API de download inválida.',503)}
+  const key=process.env.RAPIDAPI_KEY;
+  if(!key)return json('Configure RAPIDAPI_KEY nas variáveis de ambiente da Netlify.',503);
+  const provider=new URL('https://youtube-mp36.p.rapidapi.com/dl');
+  provider.searchParams.set('id',id);
   try{
-    const headers={'content-type':'application/json'};
-    if(process.env.YOUTUBE_CONVERTER_API_KEY)headers.authorization=`Bearer ${process.env.YOUTUBE_CONVERTER_API_KEY}`;
-    const response=await fetch(provider,{method:'POST',headers,body:JSON.stringify({url:input.url,videoId:id,format:input.format}),signal:AbortSignal.timeout(55000)});
+    const response=await fetch(provider,{method:'GET',headers:{'x-rapidapi-host':'youtube-mp36.p.rapidapi.com','x-rapidapi-key':key},signal:AbortSignal.timeout(55000)});
     if(!response.ok){console.error('YouTube converter:',response.status);return json(`O serviço de conversão falhou (${response.status}).`,502)}
     let audioResponse=response;
     const type=response.headers.get('content-type')||'';
     if(type.includes('json')){
       const data=await response.json();
-      if(data.status!=='ok'||!data.link)return json(data.msg||'O serviço não retornou um link de áudio.',502);
+      if(data.status!=='ok'||!data.link)return json(data.msg||'O serviço ainda não retornou um link de áudio. Tente novamente.',502);
       const link=audioLink(data.link,process.env.YOUTUBE_CONVERTER_AUDIO_HOSTS||'cdn02.ytjar.xyz');
       if(!link)return json('O serviço retornou um endereço de áudio não autorizado.',502);
       audioResponse=await fetch(link,{redirect:'manual',signal:AbortSignal.timeout(45000)});
