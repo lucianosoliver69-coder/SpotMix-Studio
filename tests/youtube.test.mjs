@@ -21,6 +21,8 @@ test('accepts provider audio link only from allowed HTTPS host',()=>{
   assert.equal(audioLink('https://cdn02.ytjar.xyz/get.php/audio.mp3?h=abc')?.hostname,'cdn02.ytjar.xyz');
   assert.equal(audioLink('https://cdn19.ytjar.xyz/audio.mp3')?.hostname,'cdn19.ytjar.xyz');
   assert.equal(audioLink('https://eta.123tokyo.xyz/audio.mp3')?.hostname,'eta.123tokyo.xyz');
+  assert.equal(audioLink('https://lambda.123tokyo.xyz/audio.mp3')?.hostname,'lambda.123tokyo.xyz');
+  assert.equal(audioLink('https://lambda.123tokyo.xyz.evil.example/audio.mp3'),null);
   assert.equal(audioLink('https://cdn02.ytjar.xyz.evil.example/audio.mp3'),null);
   assert.equal(audioLink('http://cdn02.ytjar.xyz/audio.mp3'),null);
 });
