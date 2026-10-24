@@ -14,4 +14,6 @@ Projeto independente do servidor S23. Frontend estático em `public/`; funções
 
 Os projetos e as amostras ficam no armazenamento do navegador desta instalação. Essa opção permite revisão e uso imediato sem credenciais adicionais, mas não sincroniza projetos entre aparelhos. A mixagem/exportação WAV acontece no navegador; exportação MP3 e download de YouTube não estão implementados. Para guardar áudios e projetos na nuvem e dar acesso a vários usuários, ainda é necessário definir autenticação e armazenamento durável. O usuário só deve enviar trilhas que tenha direito de utilizar.
 
+As 16 trilhas do catálogo ficam em `public/trilhas/` e são indexadas por `public/tracks.json`. Para incluir novas faixas, adicione o MP3 nessa pasta e uma entrada com o nome exato do arquivo no catálogo. Arquivos `.sfk` do editor de áudio não são necessários para reprodução.
+
 Para teste local de funções, use `npx netlify dev` após configurar o ambiente local; não publique `.env`.
