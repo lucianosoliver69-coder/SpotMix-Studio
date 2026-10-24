@@ -19,6 +19,7 @@ test('reports unconfigured converter without claiming download succeeded',async(
 
 test('accepts provider audio link only from allowed HTTPS host',()=>{
   assert.equal(audioLink('https://cdn02.ytjar.xyz/get.php/audio.mp3?h=abc')?.hostname,'cdn02.ytjar.xyz');
+  assert.equal(audioLink('https://cdn19.ytjar.xyz/audio.mp3')?.hostname,'cdn19.ytjar.xyz');
   assert.equal(audioLink('https://cdn02.ytjar.xyz.evil.example/audio.mp3'),null);
   assert.equal(audioLink('http://cdn02.ytjar.xyz/audio.mp3'),null);
 });
