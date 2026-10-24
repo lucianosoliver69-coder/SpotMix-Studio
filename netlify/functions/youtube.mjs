@@ -9,10 +9,11 @@ export function videoId(input){
   }else if(['youtu.be','www.youtu.be'].includes(host))id=url.pathname.slice(1).split('/')[0];
   return /^[A-Za-z0-9_-]{11}$/.test(id||'')?id:null;
 }
-export function audioLink(input,allowedHosts='cdn02.ytjar.xyz'){
+export function audioLink(input,allowedHosts='*.ytjar.xyz'){
   let url;try{url=new URL(input)}catch{return null}
-  const hosts=allowedHosts.split(',').map(host=>host.trim().toLowerCase()).filter(Boolean);
-  if(url.protocol!=='https:'||url.username||url.password||url.port||!hosts.includes(url.hostname.toLowerCase()))return null;
+  const hosts=allowedHosts.split(',').map(host=>host.trim().toLowerCase()).filter(Boolean),hostname=url.hostname.toLowerCase();
+  const allowed=hosts.some(pattern=>pattern.startsWith('*.')?(hostname===pattern.slice(2)||hostname.endsWith('.'+pattern.slice(2))):hostname===pattern);
+  if(url.protocol!=='https:'||url.username||url.password||url.port||!allowed)return null;
   return url;
 }
 export default async request=>{
@@ -32,7 +33,7 @@ export default async request=>{
     if(type.includes('json')){
       const data=await response.json();
       if(data.status!=='ok'||!data.link)return json(data.msg||'O serviço ainda não retornou um link de áudio. Tente novamente.',502);
-      const link=audioLink(data.link,process.env.YOUTUBE_CONVERTER_AUDIO_HOSTS||'cdn02.ytjar.xyz');
+      const link=audioLink(data.link,process.env.YOUTUBE_CONVERTER_AUDIO_HOSTS||'*.ytjar.xyz');
       if(!link)return json('O serviço retornou um endereço de áudio não autorizado.',502);
       audioResponse=await fetch(link,{redirect:'manual',signal:AbortSignal.timeout(45000)});
       if(!audioResponse.ok)return json(`O arquivo de áudio não pôde ser baixado (${audioResponse.status}).`,502);
