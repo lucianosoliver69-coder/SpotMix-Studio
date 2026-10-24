@@ -1,0 +1,29 @@
+const json=(error,status)=>new Response(JSON.stringify({error}),{status,headers:{'content-type':'application/json; charset=utf-8','cache-control':'no-store'}});
+export function videoId(input){
+  let url;try{url=new URL(input)}catch{return null}
+  const host=url.hostname.toLowerCase();
+  let id=null;
+  if(['youtube.com','www.youtube.com','m.youtube.com'].includes(host)){
+    if(url.pathname==='/watch')id=url.searchParams.get('v');
+    else if(/^\/(shorts|live)\//.test(url.pathname))id=url.pathname.split('/')[2];
+  }else if(['youtu.be','www.youtu.be'].includes(host))id=url.pathname.slice(1).split('/')[0];
+  return /^[A-Za-z0-9_-]{11}$/.test(id||'')?id:null;
+}
+export default async request=>{
+  if(request.method!=='POST')return json('Método não permitido.',405);
+  let input;try{input=await request.json()}catch{return json('Envie um JSON válido.',400)}
+  const id=videoId(input.url);if(!id)return json('Link do YouTube inválido.',400);
+  if(!['mp3','wav'].includes(input.format))return json('Escolha MP3 ou WAV.',400);
+  const endpoint=process.env.YOUTUBE_CONVERTER_API_URL;
+  if(!endpoint)return json('A API de download ainda não foi conectada. Envie os dados do provedor para habilitar esta função.',503);
+  let provider;try{provider=new URL(endpoint);if(provider.protocol!=='https:')throw Error()}catch{return json('Configuração da API de download inválida.',503)}
+  try{
+    const headers={'content-type':'application/json'};
+    if(process.env.YOUTUBE_CONVERTER_API_KEY)headers.authorization=`Bearer ${process.env.YOUTUBE_CONVERTER_API_KEY}`;
+    const response=await fetch(provider,{method:'POST',headers,body:JSON.stringify({url:input.url,videoId:id,format:input.format}),signal:AbortSignal.timeout(55000)});
+    if(!response.ok){console.error('YouTube converter:',response.status);return json(`O serviço de conversão falhou (${response.status}).`,502)}
+    const type=response.headers.get('content-type')||'';
+    if(!type.startsWith('audio/')&&!type.includes('octet-stream'))return json('O serviço não retornou áudio. Verifique o contrato da API.',502);
+    return new Response(response.body,{headers:{'content-type':type,'content-disposition':`attachment; filename="youtube-${id}.${input.format}"`,'cache-control':'no-store'}});
+  }catch(error){console.error('YouTube converter failed:',error);return json('Falha de comunicação com o serviço de conversão.',502)}
+};
