@@ -33,3 +33,10 @@ test('follows successful JSON result and returns audio',async()=>{
   globalThis.fetch=async(url,options)=>{calls++;if(calls===1){assert.equal(url.toString(),'https://youtube-mp36.p.rapidapi.com/dl?id=dQw4w9WgXcQ');assert.equal(options.method,'GET');assert.equal(options.headers['x-rapidapi-host'],'youtube-mp36.p.rapidapi.com');assert.equal(options.headers['x-rapidapi-key'],'test-only');return new Response(JSON.stringify({status:'ok',link:'https://cdn02.ytjar.xyz/song.mp3'}),{headers:{'content-type':'application/json'}})}return new Response(new Uint8Array([1,2,3]),{headers:{'content-type':'audio/mpeg'}})};
   try{const response=await convert(new Request('https://example.com/api/youtube',{method:'POST',body:JSON.stringify({url:'https://youtu.be/dQw4w9WgXcQ',format:'mp3'})}));assert.equal(response.status,200);assert.equal(response.headers.get('content-type'),'audio/mpeg');assert.equal(calls,2)}finally{globalThis.fetch=original;delete process.env.RAPIDAPI_KEY}
 });
+
+test('retries a CDN link that is still processing',async()=>{
+  process.env.RAPIDAPI_KEY='test-only';
+  const original=globalThis.fetch;let calls=0;
+  globalThis.fetch=async()=>{calls++;if(calls===1)return new Response(JSON.stringify({status:'ok',link:'https://eta.123tokyo.xyz/song.mp3'}),{headers:{'content-type':'application/json'}});if(calls===2)return new Response('',{status:404});return new Response(new Uint8Array([1]),{headers:{'content-type':'audio/mpeg'}})};
+  try{const response=await convert(new Request('https://example.com/api/youtube',{method:'POST',body:JSON.stringify({url:'https://youtu.be/dQw4w9WgXcQ',format:'mp3'})}));assert.equal(response.status,200);assert.equal(calls,3)}finally{globalThis.fetch=original;delete process.env.RAPIDAPI_KEY}
+});
