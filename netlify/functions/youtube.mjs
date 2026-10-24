@@ -9,6 +9,12 @@ export function videoId(input){
   }else if(['youtu.be','www.youtu.be'].includes(host))id=url.pathname.slice(1).split('/')[0];
   return /^[A-Za-z0-9_-]{11}$/.test(id||'')?id:null;
 }
+export function audioLink(input,allowedHosts='cdn02.ytjar.xyz'){
+  let url;try{url=new URL(input)}catch{return null}
+  const hosts=allowedHosts.split(',').map(host=>host.trim().toLowerCase()).filter(Boolean);
+  if(url.protocol!=='https:'||url.username||url.password||url.port||!hosts.includes(url.hostname.toLowerCase()))return null;
+  return url;
+}
 export default async request=>{
   if(request.method!=='POST')return json('Método não permitido.',405);
   let input;try{input=await request.json()}catch{return json('Envie um JSON válido.',400)}
@@ -22,8 +28,18 @@ export default async request=>{
     if(process.env.YOUTUBE_CONVERTER_API_KEY)headers.authorization=`Bearer ${process.env.YOUTUBE_CONVERTER_API_KEY}`;
     const response=await fetch(provider,{method:'POST',headers,body:JSON.stringify({url:input.url,videoId:id,format:input.format}),signal:AbortSignal.timeout(55000)});
     if(!response.ok){console.error('YouTube converter:',response.status);return json(`O serviço de conversão falhou (${response.status}).`,502)}
+    let audioResponse=response;
     const type=response.headers.get('content-type')||'';
-    if(!type.startsWith('audio/')&&!type.includes('octet-stream'))return json('O serviço não retornou áudio. Verifique o contrato da API.',502);
-    return new Response(response.body,{headers:{'content-type':type,'content-disposition':`attachment; filename="youtube-${id}.${input.format}"`,'cache-control':'no-store'}});
+    if(type.includes('json')){
+      const data=await response.json();
+      if(data.status!=='ok'||!data.link)return json(data.msg||'O serviço não retornou um link de áudio.',502);
+      const link=audioLink(data.link,process.env.YOUTUBE_CONVERTER_AUDIO_HOSTS||'cdn02.ytjar.xyz');
+      if(!link)return json('O serviço retornou um endereço de áudio não autorizado.',502);
+      audioResponse=await fetch(link,{redirect:'manual',signal:AbortSignal.timeout(45000)});
+      if(!audioResponse.ok)return json(`O arquivo de áudio não pôde ser baixado (${audioResponse.status}).`,502);
+    }
+    const audioType=audioResponse.headers.get('content-type')||'';
+    if(!audioType.startsWith('audio/')&&!audioType.includes('octet-stream'))return json('O serviço não retornou áudio. Verifique o contrato da API.',502);
+    return new Response(audioResponse.body,{headers:{'content-type':audioType,'content-disposition':`attachment; filename="youtube-${id}.mp3"`,'cache-control':'no-store'}});
   }catch(error){console.error('YouTube converter failed:',error);return json('Falha de comunicação com o serviço de conversão.',502)}
 };
