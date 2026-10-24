@@ -36,13 +36,13 @@ export default async request=>{
       if(data.status!=='ok'||!data.link)return json(data.msg||'O serviço ainda não retornou um link de áudio. Tente novamente.',502);
       const link=audioLink(data.link,process.env.YOUTUBE_CONVERTER_AUDIO_HOSTS||'*.ytjar.xyz,*.123tokyo.xyz');
       if(!link){let host='desconhecido';try{host=new URL(data.link).hostname}catch{}return json(`O serviço retornou um host de áudio não autorizado: ${host}.`,502)}
-      for(let attempt=0;attempt<10;attempt++){
+      for(let attempt=0;attempt<5;attempt++){
         audioResponse=await fetch(link,{redirect:'manual',signal:AbortSignal.timeout(8000)});
         if(audioResponse.ok)break;
         if(audioResponse.status!==404)return json(`O arquivo de áudio não pôde ser baixado (${audioResponse.status}).`,502);
-        if(attempt<9)await wait(4000);
+        if(attempt<4)await wait(3000);
       }
-      if(!audioResponse.ok)return json('A conversão ainda não ficou pronta após 40 segundos. Tente novamente em instantes.',504);
+      if(!audioResponse.ok)return json('A conversão ainda não ficou pronta após 12 segundos. Aguarde alguns instantes e tente novamente.',504);
     }
     const audioType=audioResponse.headers.get('content-type')||'';
     if(!audioType.startsWith('audio/')&&!audioType.includes('octet-stream'))return json('O serviço não retornou áudio. Verifique o contrato da API.',502);
