@@ -11,10 +11,10 @@ test('accepts standard YouTube links and rejects lookalike hosts',()=>{
 });
 
 test('reports unconfigured converter without claiming download succeeded',async()=>{
-  delete process.env.YOUTUBE_CONVERTER_API_URL;
+  delete process.env.RAPIDAPI_KEY;
   const response=await convert(new Request('https://example.com/api/youtube',{method:'POST',body:JSON.stringify({url:'https://youtu.be/dQw4w9WgXcQ',format:'mp3'})}));
   assert.equal(response.status,503);
-  assert.match((await response.json()).error,/não foi conectada/);
+  assert.match((await response.json()).error,/RAPIDAPI_KEY/);
 });
 
 test('accepts provider audio link only from allowed HTTPS host',()=>{
@@ -24,8 +24,8 @@ test('accepts provider audio link only from allowed HTTPS host',()=>{
 });
 
 test('follows successful JSON result and returns audio',async()=>{
-  process.env.YOUTUBE_CONVERTER_API_URL='https://converter.example/convert';
+  process.env.RAPIDAPI_KEY='test-only';
   const original=globalThis.fetch;let calls=0;
-  globalThis.fetch=async()=>{calls++;return calls===1?new Response(JSON.stringify({status:'ok',link:'https://cdn02.ytjar.xyz/song.mp3'}),{headers:{'content-type':'application/json'}}):new Response(new Uint8Array([1,2,3]),{headers:{'content-type':'audio/mpeg'}})};
-  try{const response=await convert(new Request('https://example.com/api/youtube',{method:'POST',body:JSON.stringify({url:'https://youtu.be/dQw4w9WgXcQ',format:'mp3'})}));assert.equal(response.status,200);assert.equal(response.headers.get('content-type'),'audio/mpeg');assert.equal(calls,2)}finally{globalThis.fetch=original;delete process.env.YOUTUBE_CONVERTER_API_URL}
+  globalThis.fetch=async(url,options)=>{calls++;if(calls===1){assert.equal(url.toString(),'https://youtube-mp36.p.rapidapi.com/dl?id=dQw4w9WgXcQ');assert.equal(options.method,'GET');assert.equal(options.headers['x-rapidapi-host'],'youtube-mp36.p.rapidapi.com');assert.equal(options.headers['x-rapidapi-key'],'test-only');return new Response(JSON.stringify({status:'ok',link:'https://cdn02.ytjar.xyz/song.mp3'}),{headers:{'content-type':'application/json'}})}return new Response(new Uint8Array([1,2,3]),{headers:{'content-type':'audio/mpeg'}})};
+  try{const response=await convert(new Request('https://example.com/api/youtube',{method:'POST',body:JSON.stringify({url:'https://youtu.be/dQw4w9WgXcQ',format:'mp3'})}));assert.equal(response.status,200);assert.equal(response.headers.get('content-type'),'audio/mpeg');assert.equal(calls,2)}finally{globalThis.fetch=original;delete process.env.RAPIDAPI_KEY}
 });
