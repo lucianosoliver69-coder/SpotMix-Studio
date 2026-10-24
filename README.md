@@ -7,6 +7,7 @@ Projeto independente do servidor S23. Frontend estático em `public/`; funções
 1. Importe esta pasta como repositório Git na Netlify. A configuração de build já está em `netlify.toml`.
 2. Em **Site configuration → Environment variables**, crie `GEMINI_API_KEY` com a chave existente, com escopo **Functions**. Não a coloque em `netlify.toml`, repositório ou navegador.
 3. Defina `GEMINI_TTS_MODEL=gemini-3.8-flash-tts` no mesmo painel; faça novo deploy.
+   Para os botões de correção, formatação e geração de texto, o padrão é `gemini-2.5-flash` e pode ser alterado com `GEMINI_TEXT_MODEL`.
 4. Teste `/api/voices` e uma geração de voz no aplicativo. A disponibilidade de cada ID depende do acesso daquela chave à voz na conta Google.
 
 ## Estado atual
