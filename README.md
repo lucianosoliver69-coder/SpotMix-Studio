@@ -16,4 +16,6 @@ Os projetos e as amostras ficam no armazenamento do navegador desta instalação
 
 As 16 trilhas do catálogo ficam em `public/trilhas/` e são indexadas por `public/tracks.json`. Para incluir novas faixas, adicione o MP3 nessa pasta e uma entrada com o nome exato do arquivo no catálogo. Arquivos `.sfk` do editor de áudio não são necessários para reprodução.
 
+A área de YouTube aceita links válidos e oferece MP3/WAV na mesma tela. Para habilitar a conversão real, configure `YOUTUBE_CONVERTER_API_URL` e, se exigida pelo provedor, `YOUTUBE_CONVERTER_API_KEY` nas variáveis de ambiente da Netlify. O adaptador atual envia `POST` JSON `{url, videoId, format}` com autenticação `Authorization: Bearer ...` e espera áudio binário como resposta. Ajuste esse contrato à documentação do provedor antes de ativar. A API oficial YouTube Data não fornece download de áudio.
+
 Para teste local de funções, use `npx netlify dev` após configurar o ambiente local; não publique `.env`.
