@@ -1,6 +1,6 @@
 import {test} from 'node:test';
 import assert from 'node:assert/strict';
-import convert,{videoId} from '../netlify/functions/youtube.mjs';
+import convert,{videoId,audioLink} from '../netlify/functions/youtube.mjs';
 
 test('accepts standard YouTube links and rejects lookalike hosts',()=>{
   const id='dQw4w9WgXcQ';
@@ -15,4 +15,17 @@ test('reports unconfigured converter without claiming download succeeded',async(
   const response=await convert(new Request('https://example.com/api/youtube',{method:'POST',body:JSON.stringify({url:'https://youtu.be/dQw4w9WgXcQ',format:'mp3'})}));
   assert.equal(response.status,503);
   assert.match((await response.json()).error,/não foi conectada/);
+});
+
+test('accepts provider audio link only from allowed HTTPS host',()=>{
+  assert.equal(audioLink('https://cdn02.ytjar.xyz/get.php/audio.mp3?h=abc')?.hostname,'cdn02.ytjar.xyz');
+  assert.equal(audioLink('https://cdn02.ytjar.xyz.evil.example/audio.mp3'),null);
+  assert.equal(audioLink('http://cdn02.ytjar.xyz/audio.mp3'),null);
+});
+
+test('follows successful JSON result and returns audio',async()=>{
+  process.env.YOUTUBE_CONVERTER_API_URL='https://converter.example/convert';
+  const original=globalThis.fetch;let calls=0;
+  globalThis.fetch=async()=>{calls++;return calls===1?new Response(JSON.stringify({status:'ok',link:'https://cdn02.ytjar.xyz/song.mp3'}),{headers:{'content-type':'application/json'}}):new Response(new Uint8Array([1,2,3]),{headers:{'content-type':'audio/mpeg'}})};
+  try{const response=await convert(new Request('https://example.com/api/youtube',{method:'POST',body:JSON.stringify({url:'https://youtu.be/dQw4w9WgXcQ',format:'mp3'})}));assert.equal(response.status,200);assert.equal(response.headers.get('content-type'),'audio/mpeg');assert.equal(calls,2)}finally{globalThis.fetch=original;delete process.env.YOUTUBE_CONVERTER_API_URL}
 });
