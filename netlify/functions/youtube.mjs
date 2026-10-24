@@ -34,7 +34,7 @@ export default async request=>{
       const data=await response.json();
       if(data.status!=='ok'||!data.link)return json(data.msg||'O serviço ainda não retornou um link de áudio. Tente novamente.',502);
       const link=audioLink(data.link,process.env.YOUTUBE_CONVERTER_AUDIO_HOSTS||'*.ytjar.xyz');
-      if(!link)return json('O serviço retornou um endereço de áudio não autorizado.',502);
+      if(!link){let host='desconhecido';try{host=new URL(data.link).hostname}catch{}return json(`O serviço retornou um host de áudio não autorizado: ${host}.`,502)}
       audioResponse=await fetch(link,{redirect:'manual',signal:AbortSignal.timeout(45000)});
       if(!audioResponse.ok)return json(`O arquivo de áudio não pôde ser baixado (${audioResponse.status}).`,502);
     }
